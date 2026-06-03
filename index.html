@@ -8,17 +8,17 @@ background:rgba(255,255,255,.25);color:white;font-size:48px;
 display:flex;align-items:center;justify-content:center}
 #acc{bottom:150px}#brk{bottom:15px}
 #dead{display:none;position:fixed;left:50%;top:45%;transform:translate(-50%,-50%);
-font-size:60px;padding:30px 40px}
+font-size:70px;padding:35px 45px}
 </style></head><body>
 <canvas id='c'></canvas>
 <div id='acc' class='btn'>▲</div>
 <div id='brk' class='btn'>▼</div>
-<button id='dead'>MAMASTE 💀</button>
+<button id='dead'>MAMASTE 💀</button><button id='win' style='display:none;position:fixed;left:50%;top:45%;transform:translate(-50%,-50%);font-size:60px'>🏆 GANASTE 🏆</button>
 <script>
 const c=document.getElementById('c'),x=c.getContext('2d');
 function rs(){c.width=innerWidth;c.height=innerHeight}rs();onresize=rs;
 
-let speed=80,targetSpeed=80,bike=0,targetBike=0,drag=false,dead=false;
+let speed=80,targetSpeed=80,bike=0,targetBike=0,drag=false,dead=false,km=0,won=false;
 const cars=[]; const lanes=[-1,0,1];
 
 function spawn(){
@@ -43,7 +43,7 @@ function loop(){
 
  for(let y=c.height*.25;y<c.height;y+=2){
    let p=(y-c.height*.25)/(c.height*.75);
-   let rw=420+p*c.width*1.05;
+   let rw=520+p*c.width*1.10;
    x.fillStyle="#444";x.fillRect(c.width/2-rw/2,y,rw,2);
    x.fillStyle="#fff";
    x.fillRect(c.width/2-rw/6,y,3,2);
@@ -55,19 +55,19 @@ function loop(){
    if(!dead)v.z-=speed/4;
    if(v.z<0){v.z=9000;v.lane=lanes[Math.floor(Math.random()*3)];}
    let p=1-v.z/10000;if(p<=0)return;
-   let rw=420+p*c.width*1.05;
+   let rw=520+p*c.width*1.10;
    let lane=rw/3;
-   let cx=c.width/2+v.lane*(lane*0.67);
+   let cx=c.width/2+v.lane*(lane*0.55);
    let cy=c.height*.25+p*c.height*.65;
    let s=65+p*180; // carros más grandes
    car(cx,cy,s,v.color);
-   let bx=c.width/2+bike*lane*0.67;
+   let bx=c.width/2+bike*lane*0.55;
    if(p>.95 && Math.abs(cx-bx)<80) hit=true;
  });
 
  let rw=300+c.width*0.95;
  let lane=rw/3;
- let bx=c.width/2+bike*lane*0.67;
+ let bx=c.width/2+bike*lane*0.55;
 
  x.fillStyle="#c00";
  x.fillRect(bx-50,c.height-170,100,130);
@@ -76,12 +76,12 @@ function loop(){
  x.fillStyle="#d8a07a";x.fillRect(bx-120,c.height-120,40,80);x.fillRect(bx+80,c.height-120,40,80);
 
  x.fillStyle="#fff";x.font="bold 28px Arial";
- x.fillText(Math.floor(speed)+" km/h",20,40);
+ x.fillText(Math.floor(speed)+" km/h",20,40);x.fillText("META "+(km/1000).toFixed(1)+" / 25 km",20,80);
 
  if(hit&&!dead){dead=true;speed=0;targetSpeed=0;deadBtn.style.display='block';}
 
  if(!dead){
-   speed+=(targetSpeed-speed)*0.08;
+   speed+=(targetSpeed-speed)*0.08; km+=speed*0.5; if(km>=25000&&!won){won=true;document.getElementById('win').style.display='block';speed=0;targetSpeed=0;}
  }
 }
 loop();
