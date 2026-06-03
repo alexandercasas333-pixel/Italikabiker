@@ -40,6 +40,9 @@ function loop(){
 
  x.fillStyle="#87ceeb";x.fillRect(0,0,c.width,c.height);
  x.fillStyle="#4fa04f";x.fillRect(0,c.height*.25,c.width,c.height);
+x.fillStyle="rgba(255,255,255,.9)";
+x.beginPath();x.arc(120,80,30,0,7);x.arc(150,70,35,0,7);x.arc(190,80,28,0,7);x.fill();
+x.beginPath();x.arc(c.width-220,90,30,0,7);x.arc(c.width-180,75,38,0,7);x.arc(c.width-140,90,30,0,7);x.fill();
 
  for(let y=c.height*.25;y<c.height;y+=2){
    let p=(y-c.height*.25)/(c.height*.75);
@@ -76,7 +79,7 @@ function loop(){
  x.fillStyle="#d8a07a";x.fillRect(bx-120,c.height-120,40,80);x.fillRect(bx+80,c.height-120,40,80);
 
  x.fillStyle="#fff";x.font="bold 28px Arial";
- x.fillText(Math.floor(speed)+" km/h",20,40);x.fillText("META "+(km/1000).toFixed(1)+" / 25 km",20,80);
+ x.fillText(Math.floor(speed)+" km/h",20,40);x.fillText("KM: "+(km/1000).toFixed(1),20,80);x.fillText("META: "+(km/1000).toFixed(1)+" / 25 km",20,120);
 
  if(hit&&!dead){dead=true;speed=0;targetSpeed=0;deadBtn.style.display='block';}
 
@@ -91,7 +94,7 @@ c.addEventListener('touchend',()=>drag=false);
 c.addEventListener('touchmove',e=>{
  if(!drag)return;
  let t=e.touches[0].clientX/c.width;
- targetBike=((t-0.5)*2.4); if(targetBike<-1.2)targetBike=-1.2; if(targetBike>1.2)targetBike=1.2;
+ targetBike=((t-0.5)*2.4); if(targetBike<-1.8)targetBike=-1.8; if(targetBike>1.8)targetBike=1.8;
  e.preventDefault();
 });
 
