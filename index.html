@@ -3,130 +3,153 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>280Z Rider Base</title>
+<title>280Z Rider V2</title>
 <style>
 body{margin:0;overflow:hidden;background:#000;font-family:Arial}
 canvas{display:block;touch-action:none}
-.btn{position:fixed;right:20px;width:85px;height:85px;border-radius:50%;
-background:rgba(255,255,255,.25);color:white;font-size:30px;
+.btn{position:fixed;right:15px;width:80px;height:80px;border-radius:50%;
+background:rgba(255,255,255,.25);color:#fff;font-size:30px;
 display:flex;align-items:center;justify-content:center}
-#acc{bottom:120px} #brk{bottom:20px}
-#restart{position:fixed;top:20px;left:20px;padding:10px 15px;display:none}
+#acc{bottom:110px} #brk{bottom:15px}
+#restart{position:fixed;top:15px;left:15px;display:none;padding:10px}
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
+<canvas id="g"></canvas>
 <div id="acc" class="btn">▲</div>
 <div id="brk" class="btn">▼</div>
 <button id="restart">Reiniciar</button>
-
 <script>
-const c=document.getElementById("game"),ctx=c.getContext("2d");
-function resize(){c.width=innerWidth;c.height=innerHeight} resize(); onresize=resize;
+const c=document.getElementById('g'),ctx=c.getContext('2d');
+function rs(){c.width=innerWidth;c.height=innerHeight} rs(); onresize=rs;
 
-let bikeX=0,speed=70,targetSpeed=70,km=0,dead=false,accelerating=false,braking=false;
-let cars=[];
+let speed=80,targetSpeed=80,km=0,dead=false;
+let bikeX=0,targetBikeX=0;
+let acc=false,br=false;
 
+const cars=[];
 function spawn(){
-  cars=[];
-  for(let i=0;i<5;i++){
-    cars.push({
-      lane:(Math.random()*2-1)*0.8,
-      z:1200+i*700,
-      color:["red","blue","white","silver","black"][Math.floor(Math.random()*5)]
-    });
-  }
+ cars.length=0;
+ for(let i=0;i<4;i++){
+   cars.push({
+     lane:(Math.random()*2-1)*0.9,
+     z:1800+i*1000,
+     color:["#d22","#06c","#fff","#999","#222"][Math.floor(Math.random()*5)]
+   });
+ }
 }
 spawn();
 
 function reset(){
- bikeX=0; speed=70; targetSpeed=70; km=0; dead=false;
+ speed=80; targetSpeed=80; km=0; dead=false;
+ bikeX=0; targetBikeX=0;
  document.getElementById("restart").style.display="none";
  spawn();
 }
 
 function drawCar(x,y,s,color){
  ctx.fillStyle=color;
- ctx.fillRect(x-s/2,y-s/2,s,s*1.5);
- ctx.fillStyle="#222";
- ctx.fillRect(x-s/2+5,y-s/2+5,s-10,s*0.4);
+ ctx.fillRect(x-s/2,y-s*0.8,s,s*1.6);
+ ctx.fillStyle="#88c";
+ ctx.fillRect(x-s*0.32,y-s*0.55,s*0.64,s*0.4);
+ ctx.fillStyle="#ffea00";
+ ctx.fillRect(x-s*0.42,y+s*0.45,s*0.12,s*0.08);
+ ctx.fillRect(x+s*0.30,y+s*0.45,s*0.12,s*0.08);
 }
 
 function loop(){
  requestAnimationFrame(loop);
- let w=c.width,h=c.height;
+ const w=c.width,h=c.height;
+
+ bikeX += (targetBikeX-bikeX)*0.22;
 
  ctx.fillStyle="#87CEEB";
  ctx.fillRect(0,0,w,h);
- ctx.fillStyle="#4f9b4f";
+ ctx.fillStyle="#4b9b4b";
  ctx.fillRect(0,h*0.45,w,h);
+
+ // árboles simples
+ for(let i=0;i<8;i++){
+   let yy=h*0.5+i*60;
+   ctx.fillStyle="#6b3f1f";
+   ctx.fillRect(20,yy,8,18);
+   ctx.fillRect(w-28,yy,8,18);
+   ctx.fillStyle="green";
+   ctx.beginPath();ctx.arc(24,yy,16,0,7);ctx.fill();
+   ctx.beginPath();ctx.arc(w-24,yy,16,0,7);ctx.fill();
+ }
 
  for(let y=h*0.45;y<h;y+=2){
    let p=(y-h*0.45)/(h*0.55);
-   let rw=100+p*w*0.8;
+   let rw=120+p*w*0.82;
    ctx.fillStyle="#444";
    ctx.fillRect(w/2-rw/2,y,rw,2);
 
-   if(((y+km/5)%60)<30){
-      ctx.fillStyle="white";
-      ctx.fillRect(w/2-rw/6,y,4,2);
-      ctx.fillRect(w/2+rw/6,y,4,2);
+   if(((y+km/4)%70)<35){
+     ctx.fillStyle="#fff";
+     ctx.fillRect(w/2-rw/6,y,4,2);
+     ctx.fillRect(w/2+rw/6,y,4,2);
    }
  }
 
  let hit=false;
 
  cars.forEach(car=>{
-   if(!dead) car.z-=speed/5;
+   if(!dead) car.z -= speed/4.5;
    if(car.z<0){
-      car.z=4000;
-      car.lane=(Math.random()*2-1)*0.8;
+      car.z=5000;
+      car.lane=(Math.random()*2-1)*0.9;
    }
 
-   let p=1-car.z/4500;
+   let p=1-car.z/5500;
    if(p<=0) return;
 
-   let roadW=100+p*w*0.8;
-   let x=w/2 + car.lane*(roadW*0.35);
-   let y=h*0.45 + p*h*0.5;
-   let s=20+p*80;
+   let roadW=120+p*w*0.82;
+   let cx=w/2 + car.lane*(roadW*0.38);
+   let cy=h*0.45 + p*h*0.5;
+   let s=25+p*95;
 
-   drawCar(x,y,s,car.color);
+   drawCar(cx,cy,s,car.color);
 
-   let bikeScreenX=w/2 + bikeX*140;
-
-   if(p>0.92 && Math.abs(x-bikeScreenX)<60){
+   let bikeScreenX=w/2+bikeX*220;
+   if(p>0.94 && Math.abs(cx-bikeScreenX)<55){
       hit=true;
    }
  });
 
- // moto
- let bx=w/2+bikeX*140;
+ // moto estilo 280z
+ let bx=w/2+bikeX*220;
+ let lean=(targetBikeX-bikeX)*35;
+
+ ctx.save();
+ ctx.translate(bx,h-95);
+ ctx.rotate(lean*Math.PI/180);
 
  ctx.strokeStyle="#111";
  ctx.lineWidth=12;
  ctx.beginPath();
- ctx.moveTo(bx-100,h-110);
- ctx.lineTo(bx+100,h-110);
+ ctx.moveTo(-95,-20); ctx.lineTo(95,-20);
  ctx.stroke();
 
  ctx.fillStyle="#d8a07a";
- ctx.fillRect(bx-140,h-140,50,90);
- ctx.fillRect(bx+90,h-140,50,90);
+ ctx.fillRect(-130,-55,45,70);
+ ctx.fillRect(85,-55,45,70);
 
  ctx.fillStyle="#111";
- ctx.beginPath();
- ctx.arc(bx,h-70,65,0,Math.PI*2);
- ctx.fill();
+ ctx.beginPath(); ctx.arc(0,20,55,0,7); ctx.fill();
 
- ctx.fillStyle="white";
+ ctx.fillStyle="#c00";
+ ctx.fillRect(-45,-10,90,28);
+
+ ctx.restore();
+
+ ctx.fillStyle="#fff";
  ctx.font="22px Arial";
- ctx.fillText(Math.floor(speed)+" km/h",bx-45,h-65);
+ ctx.fillText(Math.floor(speed)+" km/h",bx-45,h-55);
  ctx.fillText("KM "+Math.floor(km/100),15,30);
 
  if(hit && !dead){
-   dead=true;
-   speed=0;
+   dead=true; speed=0; targetSpeed=0;
    document.getElementById("restart").style.display="block";
  }
 
@@ -137,34 +160,27 @@ function loop(){
  }
 
  if(!dead){
-   if(accelerating) targetSpeed=Math.min(220,targetSpeed+1.2);
-   if(braking) targetSpeed=Math.max(20,targetSpeed-2);
+   if(acc) targetSpeed=Math.min(220,targetSpeed+1.4);
+   if(br) targetSpeed=Math.max(20,targetSpeed-2);
    speed += (targetSpeed-speed)*0.08;
-   km+=speed/15;
+   km += speed/15;
  }
 }
 loop();
 
-let dragging=false;
-c.addEventListener("touchstart",()=>dragging=true);
-c.addEventListener("touchend",()=>dragging=false);
-c.addEventListener("touchmove",(e)=>{
- if(!dragging) return;
- let x=e.touches[0].clientX/c.width;
- bikeX=(x-0.5)*1.8;
- if(bikeX<-1) bikeX=-1;
- if(bikeX>1) bikeX=1;
+c.addEventListener("touchstart",e=>{
+ targetBikeX=((e.touches[0].clientX/c.width)-0.5)*2.2;
+});
+c.addEventListener("touchmove",e=>{
+ targetBikeX=((e.touches[0].clientX/c.width)-0.5)*2.2;
+ targetBikeX=Math.max(-1.2,Math.min(1.2,targetBikeX));
  e.preventDefault();
 });
 
-acc.onclick=()=>{};
-document.getElementById("acc").ontouchstart=()=>accelerating=true;
-document.getElementById("acc").ontouchend=()=>accelerating=false;
-
-document.getElementById("brk").ontouchstart=()=>braking=true;
-document.getElementById("brk").ontouchend=()=>braking=false;
-
+document.getElementById("acc").ontouchstart=()=>acc=true;
+document.getElementById("acc").ontouchend=()=>acc=false;
+document.getElementById("brk").ontouchstart=()=>br=true;
+document.getElementById("brk").ontouchend=()=>br=false;
 document.getElementById("restart").onclick=reset;
 </script>
-</body>
-</html>
+</body></html>
