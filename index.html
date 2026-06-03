@@ -1,186 +1,103 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>280Z Rider V2</title>
+<!DOCTYPE html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>280Z Rider V3</title>
 <style>
-body{margin:0;overflow:hidden;background:#000;font-family:Arial}
-canvas{display:block;touch-action:none}
-.btn{position:fixed;right:15px;width:80px;height:80px;border-radius:50%;
-background:rgba(255,255,255,.25);color:#fff;font-size:30px;
-display:flex;align-items:center;justify-content:center}
-#acc{bottom:110px} #brk{bottom:15px}
-#restart{position:fixed;top:15px;left:15px;display:none;padding:10px}
-</style>
-</head>
-<body>
-<canvas id="g"></canvas>
-<div id="acc" class="btn">▲</div>
-<div id="brk" class="btn">▼</div>
+body{margin:0;overflow:hidden;background:#000}canvas{display:block;touch-action:none}
+.btn{position:fixed;right:15px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px}
+#acc{bottom:110px}#brk{bottom:15px}#restart{position:fixed;top:10px;left:10px;display:none}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="acc" class="btn">▲</div><div id="brk" class="btn">▼</div>
 <button id="restart">Reiniciar</button>
 <script>
-const c=document.getElementById('g'),ctx=c.getContext('2d');
-function rs(){c.width=innerWidth;c.height=innerHeight} rs(); onresize=rs;
+const c=document.getElementById('c'),x=c.getContext('2d');
+function rs(){c.width=innerWidth;c.height=innerHeight}rs();onresize=rs;
 
-let speed=80,targetSpeed=80,km=0,dead=false;
-let bikeX=0,targetBikeX=0;
-let acc=false,br=false;
-
+let speed=80,targetSpeed=80,bx=0,targetBx=0,km=0,dead=false,acc=false,br=false;
 const cars=[];
+
+const AC=window.AudioContext?new AudioContext():null;
+let osc=null;
+function motor(){
+ if(!AC||osc) return;
+ osc=AC.createOscillator(); let g=AC.createGain();
+ osc.type='sawtooth'; osc.connect(g); g.connect(AC.destination);
+ g.gain.value=.02; osc.start(); window.motorOsc=osc;
+}
 function spawn(){
  cars.length=0;
- for(let i=0;i<4;i++){
-   cars.push({
-     lane:(Math.random()*2-1)*0.9,
-     z:1800+i*1000,
-     color:["#d22","#06c","#fff","#999","#222"][Math.floor(Math.random()*5)]
-   });
- }
+ for(let i=0;i<4;i++) cars.push({lane:(Math.random()*2-1),z:2500+i*1400,color:["#d22","#06c","#fff","#999"][i%4]});
 }
 spawn();
 
-function reset(){
- speed=80; targetSpeed=80; km=0; dead=false;
- bikeX=0; targetBikeX=0;
- document.getElementById("restart").style.display="none";
- spawn();
-}
-
-function drawCar(x,y,s,color){
- ctx.fillStyle=color;
- ctx.fillRect(x-s/2,y-s*0.8,s,s*1.6);
- ctx.fillStyle="#88c";
- ctx.fillRect(x-s*0.32,y-s*0.55,s*0.64,s*0.4);
- ctx.fillStyle="#ffea00";
- ctx.fillRect(x-s*0.42,y+s*0.45,s*0.12,s*0.08);
- ctx.fillRect(x+s*0.30,y+s*0.45,s*0.12,s*0.08);
+function drawCar(cx,cy,s,col){
+ x.fillStyle=col; x.fillRect(cx-s/2,cy-s*.8,s,s*1.6);
+ x.fillStyle="#9cf"; x.fillRect(cx-s*.28,cy-s*.52,s*.56,s*.35);
+ x.fillStyle="#ff0"; x.fillRect(cx-s*.38,cy+s*.42,s*.1,s*.08);
+ x.fillRect(cx+s*.28,cy+s*.42,s*.1,s*.08);
 }
 
 function loop(){
  requestAnimationFrame(loop);
- const w=c.width,h=c.height;
+ x.fillStyle="#87ceeb";x.fillRect(0,0,c.width,c.height);
+ x.fillStyle="#5ea85e";x.fillRect(0,c.height*.42,c.width,c.height);
 
- bikeX += (targetBikeX-bikeX)*0.22;
+ bx+=(targetBx-bx)*0.35; // más rápido
 
- ctx.fillStyle="#87CEEB";
- ctx.fillRect(0,0,w,h);
- ctx.fillStyle="#4b9b4b";
- ctx.fillRect(0,h*0.45,w,h);
-
- // árboles simples
- for(let i=0;i<8;i++){
-   let yy=h*0.5+i*60;
-   ctx.fillStyle="#6b3f1f";
-   ctx.fillRect(20,yy,8,18);
-   ctx.fillRect(w-28,yy,8,18);
-   ctx.fillStyle="green";
-   ctx.beginPath();ctx.arc(24,yy,16,0,7);ctx.fill();
-   ctx.beginPath();ctx.arc(w-24,yy,16,0,7);ctx.fill();
- }
-
- for(let y=h*0.45;y<h;y+=2){
-   let p=(y-h*0.45)/(h*0.55);
-   let rw=120+p*w*0.82;
-   ctx.fillStyle="#444";
-   ctx.fillRect(w/2-rw/2,y,rw,2);
-
-   if(((y+km/4)%70)<35){
-     ctx.fillStyle="#fff";
-     ctx.fillRect(w/2-rw/6,y,4,2);
-     ctx.fillRect(w/2+rw/6,y,4,2);
-   }
+ for(let y=c.height*.42;y<c.height;y+=2){
+  let p=(y-c.height*.42)/(c.height*.58);
+  let rw=180+p*c.width*1.05; // carretera más ancha
+  x.fillStyle="#444"; x.fillRect(c.width/2-rw/2,y,rw,2);
  }
 
  let hit=false;
-
  cars.forEach(car=>{
-   if(!dead) car.z -= speed/4.5;
-   if(car.z<0){
-      car.z=5000;
-      car.lane=(Math.random()*2-1)*0.9;
-   }
-
-   let p=1-car.z/5500;
-   if(p<=0) return;
-
-   let roadW=120+p*w*0.82;
-   let cx=w/2 + car.lane*(roadW*0.38);
-   let cy=h*0.45 + p*h*0.5;
-   let s=25+p*95;
-
-   drawCar(cx,cy,s,car.color);
-
-   let bikeScreenX=w/2+bikeX*220;
-   if(p>0.94 && Math.abs(cx-bikeScreenX)<55){
-      hit=true;
-   }
+  if(!dead) car.z-=speed/4;
+  if(car.z<0){car.z=6500;car.lane=(Math.random()*2-1);}
+  let p=1-car.z/7000;if(p<=0)return;
+  let rw=180+p*c.width*1.05;
+  let cx=c.width/2+car.lane*(rw*.38);
+  let cy=c.height*.42+p*c.height*.5;
+  let s=20+p*100;
+  drawCar(cx,cy,s,car.color);
+  if(p>.95 && Math.abs(cx-(c.width/2+bx*300))<60) hit=true;
  });
 
- // moto estilo 280z
- let bx=w/2+bikeX*220;
- let lean=(targetBikeX-bikeX)*35;
+ let lean=(targetBx-bx)*25;
+ x.save();
+ x.translate(c.width/2+bx*300,c.height-100);
+ x.rotate(lean*Math.PI/180);
+ x.strokeStyle="#111";x.lineWidth=12;
+ x.beginPath();x.moveTo(-110,-20);x.lineTo(110,-20);x.stroke();
+ x.fillStyle="#d8a07a";x.fillRect(-140,-60,45,70);x.fillRect(95,-60,45,70);
+ x.fillStyle="#111";x.beginPath();x.arc(0,20,60,0,7);x.fill();
+ x.fillStyle="#c00";x.fillRect(-50,-10,100,30);
+ x.restore();
 
- ctx.save();
- ctx.translate(bx,h-95);
- ctx.rotate(lean*Math.PI/180);
+ x.fillStyle="#fff";x.font="22px Arial";
+ x.fillText(Math.floor(speed)+" km/h",20,30);
 
- ctx.strokeStyle="#111";
- ctx.lineWidth=12;
- ctx.beginPath();
- ctx.moveTo(-95,-20); ctx.lineTo(95,-20);
- ctx.stroke();
-
- ctx.fillStyle="#d8a07a";
- ctx.fillRect(-130,-55,45,70);
- ctx.fillRect(85,-55,45,70);
-
- ctx.fillStyle="#111";
- ctx.beginPath(); ctx.arc(0,20,55,0,7); ctx.fill();
-
- ctx.fillStyle="#c00";
- ctx.fillRect(-45,-10,90,28);
-
- ctx.restore();
-
- ctx.fillStyle="#fff";
- ctx.font="22px Arial";
- ctx.fillText(Math.floor(speed)+" km/h",bx-45,h-55);
- ctx.fillText("KM "+Math.floor(km/100),15,30);
-
- if(hit && !dead){
-   dead=true; speed=0; targetSpeed=0;
-   document.getElementById("restart").style.display="block";
- }
-
- if(dead){
-   ctx.fillStyle="red";
-   ctx.font="bold 42px Arial";
-   ctx.fillText("CHOQUE",w/2-90,h/2);
- }
+ if(hit&&!dead){dead=true;targetSpeed=0;speed=0;document.getElementById('restart').style.display='block';}
+ if(dead){x.fillStyle='red';x.font='40px Arial';x.fillText('CHOQUE',c.width/2-80,c.height/2);}
 
  if(!dead){
-   if(acc) targetSpeed=Math.min(220,targetSpeed+1.4);
-   if(br) targetSpeed=Math.max(20,targetSpeed-2);
-   speed += (targetSpeed-speed)*0.08;
-   km += speed/15;
+   if(acc) targetSpeed=Math.min(240,targetSpeed+1.5);
+   if(br) targetSpeed=Math.max(20,targetSpeed-2.5);
+   speed+=(targetSpeed-speed)*.1;
+   km+=speed/15;
+   if(window.motorOsc) motorOsc.frequency.value=80+speed*2;
  }
 }
 loop();
 
-c.addEventListener("touchstart",e=>{
- targetBikeX=((e.touches[0].clientX/c.width)-0.5)*2.2;
-});
-c.addEventListener("touchmove",e=>{
- targetBikeX=((e.touches[0].clientX/c.width)-0.5)*2.2;
- targetBikeX=Math.max(-1.2,Math.min(1.2,targetBikeX));
+c.addEventListener('touchstart',e=>{motor(); if(AC&&AC.state==="suspended") AC.resume();});
+c.addEventListener('touchmove',e=>{
+ targetBx=((e.touches[0].clientX/c.width)-0.5)*2.8;
+ targetBx=Math.max(-1.4,Math.min(1.4,targetBx));
  e.preventDefault();
 });
 
-document.getElementById("acc").ontouchstart=()=>acc=true;
-document.getElementById("acc").ontouchend=()=>acc=false;
-document.getElementById("brk").ontouchstart=()=>br=true;
-document.getElementById("brk").ontouchend=()=>br=false;
-document.getElementById("restart").onclick=reset;
-</script>
-</body></html>
+acc.onpointerdown=()=>{motor();acc=true}; acc.onpointerup=()=>acc=false;
+brk.onpointerdown=()=>br=true; brk.onpointerup=()=>br=false;
+restart.onclick=()=>{dead=false;speed=80;targetSpeed=80;spawn();restart.style.display='none';};
+</script></body></html>
