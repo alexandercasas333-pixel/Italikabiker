@@ -1,146 +1,121 @@
-<!DOCTYPE html><html><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>280Z Rider V4</title>
+<!DOCTYPE html><html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>280Z Rider V5</title>
 <style>
-body{margin:0;overflow:hidden;background:#000}canvas{display:block;touch-action:none}
-.btn{position:fixed;right:15px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px}
+body{margin:0;overflow:hidden}canvas{display:block;touch-action:none}
+.btn{position:fixed;right:15px;width:80px;height:80px;border-radius:50%;
+background:rgba(255,255,255,.25);color:#fff;display:flex;align-items:center;justify-content:center}
 #acc{bottom:110px}#brk{bottom:15px}#restart{position:fixed;top:10px;left:10px;display:none}
 </style></head><body>
-<canvas id="c"></canvas>
-<div id="acc" class="btn">▲</div><div id="brk" class="btn">▼</div>
-<button id="restart">Reiniciar</button>
+<canvas id=c></canvas>
+<div id=acc class=btn>▲</div><div id=brk class=btn>▼</div>
+<button id=restart>Reiniciar</button>
 <script>
 const c=document.getElementById('c'),x=c.getContext('2d');
 function rs(){c.width=innerWidth;c.height=innerHeight}rs();onresize=rs;
 
-let speed=80,targetSpeed=80,bikeX=0,targetBikeX=0,dead=false,acc=false,br=false;
-const lanes=[-1,0,1];
+let speed=80,targetSpeed=80,dead=false,acc=false,br=false;
+let bikeLane=0,targetLane=0;
+const lanePos=[-1,0,1];
 const cars=[];
 
 function spawn(){
  cars.length=0;
  for(let i=0;i<4;i++){
-  cars.push({
-   lane:lanes[Math.floor(Math.random()*3)],
-   z:3000+i*1800,
-   color:["#d22","#06c","#fff","#888"][i%4]
-  });
+  cars.push({lane:lanePos[Math.floor(Math.random()*3)],z:3500+i*2200,color:["#d22","#06c","#fff","#888"][i%4]});
  }
 }
 spawn();
 
 function drawCar(cx,cy,s,col){
  x.fillStyle=col;
- x.fillRect(cx-s/2,cy-s*.75,s,s*1.5);
- x.fillStyle="#9fd";
- x.fillRect(cx-s*.30,cy-s*.55,s*.60,s*.28);
- x.fillStyle="#222";
- x.fillRect(cx-s*.38,cy-s*.1,s*.76,s*.25);
+ x.fillRect(cx-s/2,cy-s*.8,s,s*1.6);
+ x.fillStyle="#9cf";
+ x.fillRect(cx-s*.3,cy-s*.55,s*.6,s*.3);
  x.fillStyle="#ff0";
- x.fillRect(cx-s*.42,cy+s*.45,s*.12,s*.07);
- x.fillRect(cx+s*.30,cy+s*.45,s*.12,s*.07);
+ x.fillRect(cx-s*.42,cy+s*.45,s*.1,s*.07);
+ x.fillRect(cx+s*.32,cy+s*.45,s*.1,s*.07);
 }
 
 function loop(){
  requestAnimationFrame(loop);
+ bikeLane+=(targetLane-bikeLane)*0.25;
 
- bikeX += (targetBikeX-bikeX)*0.45;
+ x.fillStyle="#87ceeb";x.fillRect(0,0,c.width,c.height);
+ x.fillStyle="#4fa04f";x.fillRect(0,c.height*.35,c.width,c.height);
 
- x.fillStyle="#87ceeb"; x.fillRect(0,0,c.width,c.height);
- x.fillStyle="#4fa04f"; x.fillRect(0,c.height*.38,c.width,c.height);
-
- // carretera MUCHO más ancha
- for(let y=c.height*.38;y<c.height;y+=2){
-   let p=(y-c.height*.38)/(c.height*.62);
-   let rw=260+p*c.width*1.35;
+ for(let y=c.height*.35;y<c.height;y+=2){
+   let p=(y-c.height*.35)/(c.height*.65);
+   let rw=420+p*c.width*1.7; // mucho más ancha
    x.fillStyle="#444";
    x.fillRect(c.width/2-rw/2,y,rw,2);
 
    x.fillStyle="#fff";
-   x.fillRect(c.width/2-rw/6,y,3,2);
-   x.fillRect(c.width/2+rw/6,y,3,2);
+   x.fillRect(c.width/2-rw/3,y,3,2);
+   x.fillRect(c.width/2+rw/3,y,3,2);
  }
 
  let hit=false;
 
  cars.forEach(car=>{
-   if(!dead) car.z-=speed/4;
-   if(car.z<0){
-      car.z=8000;
-      car.lane=lanes[Math.floor(Math.random()*3)];
-   }
+  if(!dead) car.z-=speed/4;
+  if(car.z<0){
+    car.z=9000;
+    car.lane=lanePos[Math.floor(Math.random()*3)];
+  }
 
-   let p=1-car.z/9000;
-   if(p<=0)return;
+  let p=1-car.z/10000;
+  if(p<=0)return;
 
-   let rw=260+p*c.width*1.35;
-   let laneWidth=rw/3.5;
-   let cx=c.width/2 + car.lane*laneWidth;
-   let cy=c.height*.38 + p*c.height*.55;
-   let s=25+p*110;
+  let rw=420+p*c.width*1.7;
+  let laneWidth=rw/3;
+  let cx=c.width/2 + car.lane*(laneWidth*0.66); // 3 carriles reales
+  let cy=c.height*.35+p*c.height*.58;
+  let s=30+p*120;
 
-   drawCar(cx,cy,s,car.color);
+  drawCar(cx,cy,s,car.color);
 
-   let bikeScreenX=c.width/2+bikeX*380;
-   if(p>.96 && Math.abs(cx-bikeScreenX)<55) hit=true;
+  let bikeX=c.width/2 + bikeLane*(laneWidth*0.66);
+  if(p>.96 && Math.abs(cx-bikeX)<70) hit=true;
  });
 
- // moto
- let bx=c.width/2+bikeX*380;
- let lean=(targetBikeX-bikeX)*18;
+ let rwBottom=420+1*c.width*1.7;
+ let laneWidthBottom=rwBottom/3;
+ let bikeX=c.width/2 + bikeLane*(laneWidthBottom*0.66);
 
  x.save();
- x.translate(bx,c.height-95);
- x.rotate(lean*Math.PI/180);
- x.strokeStyle="#111"; x.lineWidth=12;
- x.beginPath(); x.moveTo(-120,-20); x.lineTo(120,-20); x.stroke();
+ x.translate(bikeX,c.height-95);
+ x.strokeStyle="#111";x.lineWidth=12;
+ x.beginPath();x.moveTo(-120,-20);x.lineTo(120,-20);x.stroke();
  x.fillStyle="#d8a07a";
- x.fillRect(-145,-60,45,70);
- x.fillRect(100,-60,45,70);
- x.fillStyle="#111";
- x.beginPath(); x.arc(0,20,60,0,7); x.fill();
- x.fillStyle="#c00";
- x.fillRect(-55,-10,110,30);
+ x.fillRect(-145,-60,45,70);x.fillRect(100,-60,45,70);
+ x.fillStyle="#111";x.beginPath();x.arc(0,20,60,0,7);x.fill();
+ x.fillStyle="#c00";x.fillRect(-55,-10,110,30);
  x.restore();
 
- x.fillStyle="#fff";
- x.font="22px Arial";
- x.fillText(Math.floor(speed)+" km/h",20,30);
-
- if(hit&&!dead){
-   dead=true; speed=0; targetSpeed=0;
-   restart.style.display='block';
- }
-
- if(dead){
-   x.fillStyle='red';
-   x.font='40px Arial';
-   x.fillText('CHOQUE',c.width/2-80,c.height/2);
- }
+ if(hit&&!dead){dead=true;speed=0;targetSpeed=0;restart.style.display='block';}
 
  if(!dead){
-   if(acc) targetSpeed=Math.min(240,targetSpeed+1.5);
-   if(br) targetSpeed=Math.max(20,targetSpeed-2.5);
-   speed += (targetSpeed-speed)*0.1;
+  if(acc) targetSpeed=Math.min(240,targetSpeed+1.5);
+  if(br) targetSpeed=Math.max(20,targetSpeed-2.5);
+  speed+=(targetSpeed-speed)*0.1;
  }
+
+ x.fillStyle="#fff";x.font="22px Arial";
+ x.fillText(Math.floor(speed)+" km/h",20,30);
 }
+
 loop();
 
-// Ya no regresa al centro al tocar de nuevo
 c.addEventListener('touchmove',e=>{
- targetBikeX=((e.touches[0].clientX/c.width)-0.5)*1.8;
- targetBikeX=Math.max(-1.3,Math.min(1.3,targetBikeX));
+ let t=e.touches[0].clientX/c.width;
+ if(t<0.33) targetLane=-1;
+ else if(t<0.66) targetLane=0;
+ else targetLane=1;
  e.preventDefault();
 });
 
-acc.onpointerdown=()=>acc=true;
-acc.onpointerup=()=>acc=false;
-brk.onpointerdown=()=>br=true;
-brk.onpointerup=()=>br=false;
-
-restart.onclick=()=>{
- dead=false; speed=80; targetSpeed=80;
- restart.style.display='none';
- spawn();
-};
+acc.onpointerdown=()=>acc=true; acc.onpointerup=()=>acc=false;
+brk.onpointerdown=()=>br=true; brk.onpointerup=()=>br=false;
+restart.onclick=()=>{dead=false;speed=80;targetSpeed=80;restart.style.display='none';spawn();};
 </script></body></html>
