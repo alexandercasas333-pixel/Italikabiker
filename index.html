@@ -1,6 +1,6 @@
 <!DOCTYPE html><html><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>280Z Rider V3</title>
+<title>280Z Rider V4</title>
 <style>
 body{margin:0;overflow:hidden;background:#000}canvas{display:block;touch-action:none}
 .btn{position:fixed;right:15px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px}
@@ -13,91 +13,134 @@ body{margin:0;overflow:hidden;background:#000}canvas{display:block;touch-action:
 const c=document.getElementById('c'),x=c.getContext('2d');
 function rs(){c.width=innerWidth;c.height=innerHeight}rs();onresize=rs;
 
-let speed=80,targetSpeed=80,bx=0,targetBx=0,km=0,dead=false,acc=false,br=false;
+let speed=80,targetSpeed=80,bikeX=0,targetBikeX=0,dead=false,acc=false,br=false;
+const lanes=[-1,0,1];
 const cars=[];
 
-const AC=window.AudioContext?new AudioContext():null;
-let osc=null;
-function motor(){
- if(!AC||osc) return;
- osc=AC.createOscillator(); let g=AC.createGain();
- osc.type='sawtooth'; osc.connect(g); g.connect(AC.destination);
- g.gain.value=.02; osc.start(); window.motorOsc=osc;
-}
 function spawn(){
  cars.length=0;
- for(let i=0;i<4;i++) cars.push({lane:(Math.random()*2-1),z:2500+i*1400,color:["#d22","#06c","#fff","#999"][i%4]});
+ for(let i=0;i<4;i++){
+  cars.push({
+   lane:lanes[Math.floor(Math.random()*3)],
+   z:3000+i*1800,
+   color:["#d22","#06c","#fff","#888"][i%4]
+  });
+ }
 }
 spawn();
 
 function drawCar(cx,cy,s,col){
- x.fillStyle=col; x.fillRect(cx-s/2,cy-s*.8,s,s*1.6);
- x.fillStyle="#9cf"; x.fillRect(cx-s*.28,cy-s*.52,s*.56,s*.35);
- x.fillStyle="#ff0"; x.fillRect(cx-s*.38,cy+s*.42,s*.1,s*.08);
- x.fillRect(cx+s*.28,cy+s*.42,s*.1,s*.08);
+ x.fillStyle=col;
+ x.fillRect(cx-s/2,cy-s*.75,s,s*1.5);
+ x.fillStyle="#9fd";
+ x.fillRect(cx-s*.30,cy-s*.55,s*.60,s*.28);
+ x.fillStyle="#222";
+ x.fillRect(cx-s*.38,cy-s*.1,s*.76,s*.25);
+ x.fillStyle="#ff0";
+ x.fillRect(cx-s*.42,cy+s*.45,s*.12,s*.07);
+ x.fillRect(cx+s*.30,cy+s*.45,s*.12,s*.07);
 }
 
 function loop(){
  requestAnimationFrame(loop);
- x.fillStyle="#87ceeb";x.fillRect(0,0,c.width,c.height);
- x.fillStyle="#5ea85e";x.fillRect(0,c.height*.42,c.width,c.height);
 
- bx+=(targetBx-bx)*0.35; // más rápido
+ bikeX += (targetBikeX-bikeX)*0.45;
 
- for(let y=c.height*.42;y<c.height;y+=2){
-  let p=(y-c.height*.42)/(c.height*.58);
-  let rw=180+p*c.width*1.05; // carretera más ancha
-  x.fillStyle="#444"; x.fillRect(c.width/2-rw/2,y,rw,2);
+ x.fillStyle="#87ceeb"; x.fillRect(0,0,c.width,c.height);
+ x.fillStyle="#4fa04f"; x.fillRect(0,c.height*.38,c.width,c.height);
+
+ // carretera MUCHO más ancha
+ for(let y=c.height*.38;y<c.height;y+=2){
+   let p=(y-c.height*.38)/(c.height*.62);
+   let rw=260+p*c.width*1.35;
+   x.fillStyle="#444";
+   x.fillRect(c.width/2-rw/2,y,rw,2);
+
+   x.fillStyle="#fff";
+   x.fillRect(c.width/2-rw/6,y,3,2);
+   x.fillRect(c.width/2+rw/6,y,3,2);
  }
 
  let hit=false;
+
  cars.forEach(car=>{
-  if(!dead) car.z-=speed/4;
-  if(car.z<0){car.z=6500;car.lane=(Math.random()*2-1);}
-  let p=1-car.z/7000;if(p<=0)return;
-  let rw=180+p*c.width*1.05;
-  let cx=c.width/2+car.lane*(rw*.38);
-  let cy=c.height*.42+p*c.height*.5;
-  let s=20+p*100;
-  drawCar(cx,cy,s,car.color);
-  if(p>.95 && Math.abs(cx-(c.width/2+bx*300))<60) hit=true;
+   if(!dead) car.z-=speed/4;
+   if(car.z<0){
+      car.z=8000;
+      car.lane=lanes[Math.floor(Math.random()*3)];
+   }
+
+   let p=1-car.z/9000;
+   if(p<=0)return;
+
+   let rw=260+p*c.width*1.35;
+   let laneWidth=rw/3.5;
+   let cx=c.width/2 + car.lane*laneWidth;
+   let cy=c.height*.38 + p*c.height*.55;
+   let s=25+p*110;
+
+   drawCar(cx,cy,s,car.color);
+
+   let bikeScreenX=c.width/2+bikeX*380;
+   if(p>.96 && Math.abs(cx-bikeScreenX)<55) hit=true;
  });
 
- let lean=(targetBx-bx)*25;
+ // moto
+ let bx=c.width/2+bikeX*380;
+ let lean=(targetBikeX-bikeX)*18;
+
  x.save();
- x.translate(c.width/2+bx*300,c.height-100);
+ x.translate(bx,c.height-95);
  x.rotate(lean*Math.PI/180);
- x.strokeStyle="#111";x.lineWidth=12;
- x.beginPath();x.moveTo(-110,-20);x.lineTo(110,-20);x.stroke();
- x.fillStyle="#d8a07a";x.fillRect(-140,-60,45,70);x.fillRect(95,-60,45,70);
- x.fillStyle="#111";x.beginPath();x.arc(0,20,60,0,7);x.fill();
- x.fillStyle="#c00";x.fillRect(-50,-10,100,30);
+ x.strokeStyle="#111"; x.lineWidth=12;
+ x.beginPath(); x.moveTo(-120,-20); x.lineTo(120,-20); x.stroke();
+ x.fillStyle="#d8a07a";
+ x.fillRect(-145,-60,45,70);
+ x.fillRect(100,-60,45,70);
+ x.fillStyle="#111";
+ x.beginPath(); x.arc(0,20,60,0,7); x.fill();
+ x.fillStyle="#c00";
+ x.fillRect(-55,-10,110,30);
  x.restore();
 
- x.fillStyle="#fff";x.font="22px Arial";
+ x.fillStyle="#fff";
+ x.font="22px Arial";
  x.fillText(Math.floor(speed)+" km/h",20,30);
 
- if(hit&&!dead){dead=true;targetSpeed=0;speed=0;document.getElementById('restart').style.display='block';}
- if(dead){x.fillStyle='red';x.font='40px Arial';x.fillText('CHOQUE',c.width/2-80,c.height/2);}
+ if(hit&&!dead){
+   dead=true; speed=0; targetSpeed=0;
+   restart.style.display='block';
+ }
+
+ if(dead){
+   x.fillStyle='red';
+   x.font='40px Arial';
+   x.fillText('CHOQUE',c.width/2-80,c.height/2);
+ }
 
  if(!dead){
    if(acc) targetSpeed=Math.min(240,targetSpeed+1.5);
    if(br) targetSpeed=Math.max(20,targetSpeed-2.5);
-   speed+=(targetSpeed-speed)*.1;
-   km+=speed/15;
-   if(window.motorOsc) motorOsc.frequency.value=80+speed*2;
+   speed += (targetSpeed-speed)*0.1;
  }
 }
 loop();
 
-c.addEventListener('touchstart',e=>{motor(); if(AC&&AC.state==="suspended") AC.resume();});
+// Ya no regresa al centro al tocar de nuevo
 c.addEventListener('touchmove',e=>{
- targetBx=((e.touches[0].clientX/c.width)-0.5)*2.8;
- targetBx=Math.max(-1.4,Math.min(1.4,targetBx));
+ targetBikeX=((e.touches[0].clientX/c.width)-0.5)*1.8;
+ targetBikeX=Math.max(-1.3,Math.min(1.3,targetBikeX));
  e.preventDefault();
 });
 
-acc.onpointerdown=()=>{motor();acc=true}; acc.onpointerup=()=>acc=false;
-brk.onpointerdown=()=>br=true; brk.onpointerup=()=>br=false;
-restart.onclick=()=>{dead=false;speed=80;targetSpeed=80;spawn();restart.style.display='none';};
+acc.onpointerdown=()=>acc=true;
+acc.onpointerup=()=>acc=false;
+brk.onpointerdown=()=>br=true;
+brk.onpointerup=()=>br=false;
+
+restart.onclick=()=>{
+ dead=false; speed=80; targetSpeed=80;
+ restart.style.display='none';
+ spawn();
+};
 </script></body></html>
