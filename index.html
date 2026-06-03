@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>280Z Rider Base</title>
+<style>
+body{margin:0;overflow:hidden;background:#000;font-family:Arial}
+canvas{display:block;touch-action:none}
+.btn{position:fixed;right:20px;width:85px;height:85px;border-radius:50%;
+background:rgba(255,255,255,.25);color:white;font-size:30px;
+display:flex;align-items:center;justify-content:center}
+#acc{bottom:120px} #brk{bottom:20px}
+#restart{position:fixed;top:20px;left:20px;padding:10px 15px;display:none}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="acc" class="btn">▲</div>
+<div id="brk" class="btn">▼</div>
+<button id="restart">Reiniciar</button>
+
+<script>
+const c=document.getElementById("game"),ctx=c.getContext("2d");
+function resize(){c.width=innerWidth;c.height=innerHeight} resize(); onresize=resize;
+
+let bikeX=0,speed=70,targetSpeed=70,km=0,dead=false,accelerating=false,braking=false;
+let cars=[];
+
+function spawn(){
+  cars=[];
+  for(let i=0;i<5;i++){
+    cars.push({
+      lane:(Math.random()*2-1)*0.8,
+      z:1200+i*700,
+      color:["red","blue","white","silver","black"][Math.floor(Math.random()*5)]
+    });
+  }
+}
+spawn();
+
+function reset(){
+ bikeX=0; speed=70; targetSpeed=70; km=0; dead=false;
+ document.getElementById("restart").style.display="none";
+ spawn();
+}
+
+function drawCar(x,y,s,color){
+ ctx.fillStyle=color;
+ ctx.fillRect(x-s/2,y-s/2,s,s*1.5);
+ ctx.fillStyle="#222";
+ ctx.fillRect(x-s/2+5,y-s/2+5,s-10,s*0.4);
+}
+
+function loop(){
+ requestAnimationFrame(loop);
+ let w=c.width,h=c.height;
+
+ ctx.fillStyle="#87CEEB";
+ ctx.fillRect(0,0,w,h);
+ ctx.fillStyle="#4f9b4f";
+ ctx.fillRect(0,h*0.45,w,h);
+
+ for(let y=h*0.45;y<h;y+=2){
+   let p=(y-h*0.45)/(h*0.55);
+   let rw=100+p*w*0.8;
+   ctx.fillStyle="#444";
+   ctx.fillRect(w/2-rw/2,y,rw,2);
+
+   if(((y+km/5)%60)<30){
+      ctx.fillStyle="white";
+      ctx.fillRect(w/2-rw/6,y,4,2);
+      ctx.fillRect(w/2+rw/6,y,4,2);
+   }
+ }
+
+ let hit=false;
+
+ cars.forEach(car=>{
+   if(!dead) car.z-=speed/5;
+   if(car.z<0){
+      car.z=4000;
+      car.lane=(Math.random()*2-1)*0.8;
+   }
+
+   let p=1-car.z/4500;
+   if(p<=0) return;
+
+   let roadW=100+p*w*0.8;
+   let x=w/2 + car.lane*(roadW*0.35);
+   let y=h*0.45 + p*h*0.5;
+   let s=20+p*80;
+
+   drawCar(x,y,s,car.color);
+
+   let bikeScreenX=w/2 + bikeX*140;
+
+   if(p>0.92 && Math.abs(x-bikeScreenX)<60){
+      hit=true;
+   }
+ });
+
+ // moto
+ let bx=w/2+bikeX*140;
+
+ ctx.strokeStyle="#111";
+ ctx.lineWidth=12;
+ ctx.beginPath();
+ ctx.moveTo(bx-100,h-110);
+ ctx.lineTo(bx+100,h-110);
+ ctx.stroke();
+
+ ctx.fillStyle="#d8a07a";
+ ctx.fillRect(bx-140,h-140,50,90);
+ ctx.fillRect(bx+90,h-140,50,90);
+
+ ctx.fillStyle="#111";
+ ctx.beginPath();
+ ctx.arc(bx,h-70,65,0,Math.PI*2);
+ ctx.fill();
+
+ ctx.fillStyle="white";
+ ctx.font="22px Arial";
+ ctx.fillText(Math.floor(speed)+" km/h",bx-45,h-65);
+ ctx.fillText("KM "+Math.floor(km/100),15,30);
+
+ if(hit && !dead){
+   dead=true;
+   speed=0;
+   document.getElementById("restart").style.display="block";
+ }
+
+ if(dead){
+   ctx.fillStyle="red";
+   ctx.font="bold 42px Arial";
+   ctx.fillText("CHOQUE",w/2-90,h/2);
+ }
+
+ if(!dead){
+   if(accelerating) targetSpeed=Math.min(220,targetSpeed+1.2);
+   if(braking) targetSpeed=Math.max(20,targetSpeed-2);
+   speed += (targetSpeed-speed)*0.08;
+   km+=speed/15;
+ }
+}
+loop();
+
+let dragging=false;
+c.addEventListener("touchstart",()=>dragging=true);
+c.addEventListener("touchend",()=>dragging=false);
+c.addEventListener("touchmove",(e)=>{
+ if(!dragging) return;
+ let x=e.touches[0].clientX/c.width;
+ bikeX=(x-0.5)*1.8;
+ if(bikeX<-1) bikeX=-1;
+ if(bikeX>1) bikeX=1;
+ e.preventDefault();
+});
+
+acc.onclick=()=>{};
+document.getElementById("acc").ontouchstart=()=>accelerating=true;
+document.getElementById("acc").ontouchend=()=>accelerating=false;
+
+document.getElementById("brk").ontouchstart=()=>braking=true;
+document.getElementById("brk").ontouchend=()=>braking=false;
+
+document.getElementById("restart").onclick=reset;
+</script>
+</body>
+</html>
