@@ -8,7 +8,7 @@ background:rgba(255,255,255,.25);color:white;font-size:48px;
 display:flex;align-items:center;justify-content:center}
 #acc{bottom:150px}#brk{bottom:15px}
 #dead{display:none;position:fixed;left:50%;top:45%;transform:translate(-50%,-50%);
-font-size:40px;padding:20px 30px}
+font-size:60px;padding:30px 40px}
 </style></head><body>
 <canvas id='c'></canvas>
 <div id='acc' class='btn'>▲</div>
@@ -43,7 +43,7 @@ function loop(){
 
  for(let y=c.height*.25;y<c.height;y+=2){
    let p=(y-c.height*.25)/(c.height*.75);
-   let rw=300+p*c.width*0.95;
+   let rw=420+p*c.width*1.05;
    x.fillStyle="#444";x.fillRect(c.width/2-rw/2,y,rw,2);
    x.fillStyle="#fff";
    x.fillRect(c.width/2-rw/6,y,3,2);
@@ -55,11 +55,11 @@ function loop(){
    if(!dead)v.z-=speed/4;
    if(v.z<0){v.z=9000;v.lane=lanes[Math.floor(Math.random()*3)];}
    let p=1-v.z/10000;if(p<=0)return;
-   let rw=300+p*c.width*0.95;
+   let rw=420+p*c.width*1.05;
    let lane=rw/3;
    let cx=c.width/2+v.lane*(lane*0.67);
    let cy=c.height*.25+p*c.height*.65;
-   let s=40+p*140; // carros más grandes
+   let s=65+p*180; // carros más grandes
    car(cx,cy,s,v.color);
    let bx=c.width/2+bike*lane*0.67;
    if(p>.95 && Math.abs(cx-bx)<80) hit=true;
@@ -91,9 +91,7 @@ c.addEventListener('touchend',()=>drag=false);
 c.addEventListener('touchmove',e=>{
  if(!drag)return;
  let t=e.touches[0].clientX/c.width;
- if(t<0.33) targetBike=-1;
- else if(t<0.66) targetBike=0;
- else targetBike=1;
+ targetBike=((t-0.5)*2.4); if(targetBike<-1.2)targetBike=-1.2; if(targetBike>1.2)targetBike=1.2;
  e.preventDefault();
 });
 
